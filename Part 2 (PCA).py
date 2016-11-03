@@ -136,32 +136,43 @@ if  __name__ == "__main__":
     import matplotlib.pyplot as plt
     from scipy import linalg
 
-    from sklearn.decomposition import PCA, FactorAnalysis
+    from sklearn.decomposition import PCA, FactorAnalysis, FastICA
+    from sklearn.random_projection import GaussianRandomProjection
     from sklearn.covariance import ShrunkCovariance, LedoitWolf
     from sklearn.model_selection import cross_val_score
     from sklearn.model_selection import GridSearchCV
 
     print(__doc__)
 
+    def best_scorer(estimator, X, y=None):
+        return 0.
+
     n_samples, n_features, rank = 1000, len(X[0]), 10
 
 
-    n_components = np.arange(0, n_features+1, 1)  # options for n_components
+    n_components = np.arange(1, n_features+1, 1)  # options for n_components
 
 
     def compute_scores(X):
         pca = PCA(svd_solver='full')
         fa = FactorAnalysis(max_iter=3000)
+        rp = GaussianRandomProjection()
+        ica = FastICA()
 
-        pca_scores, fa_scores = [], []
+        pca_scores, fa_scores, rp_scores, ica_scores = [], [], [], []
         for n in n_components:
             print n,"components"
             pca.n_components = n
             fa.n_components = n
+            rp.n_components = n
+            ica.n_components = n
+
             pca_scores.append(np.mean(cross_val_score(pca, X)))
             fa_scores.append(np.mean(cross_val_score(fa, X)))
+            rp_scores.append(np.mean(cross_val_score(rp,X, scoring=best_scorer)))
+            ica_scores.append(np.mean(cross_val_score(ica,X,scoring=best_scorer)))
 
-        return pca_scores, fa_scores
+        return pca_scores, fa_scores, rp_scores, ica_scores
 
 
     def shrunk_cov_score(X):
@@ -175,9 +186,11 @@ if  __name__ == "__main__":
 
 
     title = current_dataset
-    pca_scores, fa_scores = compute_scores(X)
+    pca_scores, fa_scores, rp_scores, ica_scores = compute_scores(X)
     n_components_pca = n_components[np.argmax(pca_scores)]
     n_components_fa = n_components[np.argmax(fa_scores)]
+    n_components_rp = n_components[np.argmax(rp_scores)]
+    n_components_ica = n_components[np.argmax(ica_scores)]
 
     pca = PCA(svd_solver='full', n_components='mle')
     pca.fit(X)
@@ -185,16 +198,26 @@ if  __name__ == "__main__":
 
     print("best n_components by PCA CV = %d" % n_components_pca)
     print("best n_components by FactorAnalysis CV = %d" % n_components_fa)
+    print("best n_components by Random Projection CV = %d" % n_components_rp)
+    print("best n_components by ICA CV = %d" % n_components_ica)
     print("best n_components by PCA MLE = %d" % n_components_pca_mle)
 
     plt.figure()
     plt.plot(n_components, pca_scores, 'b', label='PCA scores')
     plt.plot(n_components, fa_scores, 'r', label='FA scores')
+    plt.plot(n_components, rp_scores, 'c', label='Random Projection scores')
+    plt.plot(n_components, ica_scores, 'g', label='ICA scores')
     plt.axvline(rank, color='g', label='TRUTH: %d' % rank, linestyle='-')
     plt.axvline(n_components_pca, color='b',
                 label='PCA CV: %d' % n_components_pca, linestyle='--')
     plt.axvline(n_components_fa, color='r',
                 label='FactorAnalysis CV: %d' % n_components_fa,
+                linestyle='--')
+    plt.axvline(n_components_rp, color='c',
+                label='Random Projection CV: %d' % n_components_rp,
+                linestyle='--')
+    plt.axvline(n_components_ica, color='g',
+                label='ICA CV: %d' % n_components_ica,
                 linestyle='--')
     plt.axvline(n_components_pca_mle, color='k',
                 label='PCA MLE: %d' % n_components_pca_mle, linestyle='--')
