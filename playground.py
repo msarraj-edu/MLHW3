@@ -49,6 +49,23 @@ def local_func():
     save(filename="test",globals_= locals())
 
 
+
+def my_score(data,labels,centers,scoring_metric):
+
+    sum = 0
+
+    for point,label in zip(data,labels):
+        sum+= scoring_metric(point,centers[label])
+    return sum
+
+
+def euc_distance(point1,point2):
+    distance = 0
+    for i,j in zip(point1,point2):
+        distance += (i-j)*(i-j)
+    return distance
+
+
 def bench_k_means(estimator, name, data,save_file_name,current_dataset):
     t0 = time()
     estimator.fit(data)
@@ -71,11 +88,13 @@ def bench_k_means(estimator, name, data,save_file_name,current_dataset):
     silhouette4 = metrics.silhouette_score(data, estimator.labels_,
                                           metric='euclidean',
                                           sample_size=1000)
+
+    custom_score = my_score(data,labels,estimator.cluster_centers_,euc_distance)
     # bic = estimator.bic(data)
     # aic = estimator.aic(data)
 
 
-    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'
+    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f   %.3f'
           % (name,
              (training_time),
              estimator.inertia_,
@@ -84,7 +103,8 @@ def bench_k_means(estimator, name, data,save_file_name,current_dataset):
              v_score,
              ARI,
              AMI,
-             silhouette,silhouette2,silhouette3,silhouette4
+             silhouette,silhouette2,silhouette3,silhouette4,
+             custom_score
              ))
     with open(save_file_name, 'ab') as fp:
         a = csv.writer(fp, delimiter=',')
@@ -97,7 +117,8 @@ def bench_k_means(estimator, name, data,save_file_name,current_dataset):
                     v_score,
                     ARI,
                     AMI,
-                    silhouette
+                    silhouette,
+                    custom_score
                     ])
 
 def bench_em(estimator, name, data,save_file_name,current_dataset):
