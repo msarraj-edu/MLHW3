@@ -68,6 +68,8 @@ if  __name__ == "__main__":
                                   'ozone': learning_algorithm + '_ozone',
                                   'cancer':learning_algorithm + '_cancer'}[current_dataset] +'.csv'
 
+    with open('RP.csv', 'wb') as fp:
+        a = csv.writer(fp, delimiter=',')
 
     with open(save_file_name, 'wb') as fp:
         a = csv.writer(fp, delimiter=',')
@@ -141,8 +143,51 @@ if  __name__ == "__main__":
     from sklearn.covariance import ShrunkCovariance, LedoitWolf
     from sklearn.model_selection import cross_val_score
     from sklearn.model_selection import GridSearchCV
+    from scipy.stats import kurtosis
 
     print(__doc__)
+
+
+    def get_kurtosis(X):
+        kur = []
+        for feature in range(X.shape[1]):
+            kur.append(kurtosis(X[:, feature]))
+
+        return kur
+
+    def save_to_csv(file,data,description, append=False):
+
+        if append:
+            with open(file, 'ab') as fp:
+                a = csv.writer(fp, delimiter=',')
+                myList = [description]
+                myList.extend(data)
+                a.writerow(myList)
+        else:
+            with open(file, 'wb') as fp:
+                a = csv.writer(fp, delimiter=',')
+                myList = [description]
+                myList.extend(data)
+                a.writerow(myList)
+
+
+    def top_scorer(n):
+        def my_func(estimator,X,y=None):
+            kur = []
+            for feature in range(X.shape[1]):
+                kur.append(kurtosis(input[:, feature]))
+            # sorted_kur = sorted(range(len(a)), key=lambda i: a[i], reverse=True)[:n]
+            # avg = sum(sorted_kur)/len(sorted_kur)
+            # result = []
+            # for value in sorted_kur:
+            #     if value >= avg:
+            #         result.append(value)
+            #
+            # return result
+            return kur
+
+        return my_func
+
 
     def best_scorer(estimator, X, y=None):
         return 0.
@@ -151,6 +196,7 @@ if  __name__ == "__main__":
 
 
     n_components = np.arange(1, n_features+1, 1)  # options for n_components
+    
 
 
     def compute_scores(X):
@@ -167,12 +213,26 @@ if  __name__ == "__main__":
             rp.n_components = n
             ica.n_components = n
 
+
+
             pca_scores.append(np.mean(cross_val_score(pca, X)))
             fa_scores.append(np.mean(cross_val_score(fa, X)))
-            rp_scores.append(np.mean(cross_val_score(rp,X, scoring=best_scorer)))
-            ica_scores.append(np.mean(cross_val_score(ica,X,scoring=best_scorer)))
+            rp.fit(X)
+            rp_data = rp.transform(X)
+            save_to_csv('RP.csv',get_kurtosis(rp_data),'rp for '+current_dataset+', k= %d'%n,append=True)
+            if n == n_components[-1]:
+                ica.fit(X)
+                ica_data = ica.transform(X)
+                save_to_csv('ICA.csv',get_kurtosis(ica_data),'rp for '+current_dataset+', k= %d'%n)
 
-        return pca_scores, fa_scores, rp_scores, ica_scores
+            # rp_scores.append(np.mean(cross_val_score(rp,X, scoring=best_scorer)))
+            # ica_scores.append(np.mean(cross_val_score(ica,X,scoring=best_scorer)))
+
+
+        save_to_csv('PCA.csv',pca_scores,'pca for ' + current_dataset)
+        save_to_csv('FA.csv', fa_scores, 'fa for ' + current_dataset)
+
+        return pca_scores, fa_scores
 
 
     def shrunk_cov_score(X):
@@ -186,11 +246,11 @@ if  __name__ == "__main__":
 
 
     title = current_dataset
-    pca_scores, fa_scores, rp_scores, ica_scores = compute_scores(X)
+    pca_scores, fa_scores = compute_scores(X)
     n_components_pca = n_components[np.argmax(pca_scores)]
     n_components_fa = n_components[np.argmax(fa_scores)]
-    n_components_rp = n_components[np.argmax(rp_scores)]
-    n_components_ica = n_components[np.argmax(ica_scores)]
+    # n_components_rp = n_components[np.argmax(rp_scores)]
+    # n_components_ica = n_components[np.argmax(ica_scores)]
 
     pca = PCA(svd_solver='full', n_components='mle')
     pca.fit(X)
@@ -198,27 +258,27 @@ if  __name__ == "__main__":
 
     print("best n_components by PCA CV = %d" % n_components_pca)
     print("best n_components by FactorAnalysis CV = %d" % n_components_fa)
-    print("best n_components by Random Projection CV = %d" % n_components_rp)
-    print("best n_components by ICA CV = %d" % n_components_ica)
+    # print("best n_components by Random Projection CV = %d" % n_components_rp)
+    # print("best n_components by ICA CV = %d" % n_components_ica)
     print("best n_components by PCA MLE = %d" % n_components_pca_mle)
 
     plt.figure()
     plt.plot(n_components, pca_scores, 'b', label='PCA scores')
     plt.plot(n_components, fa_scores, 'r', label='FA scores')
-    plt.plot(n_components, rp_scores, 'c', label='Random Projection scores')
-    plt.plot(n_components, ica_scores, 'g', label='ICA scores')
+    # plt.plot(n_components, rp_scores, 'c', label='Random Projection scores')
+    # plt.plot(n_components, ica_scores, 'g', label='ICA scores')
     plt.axvline(rank, color='g', label='TRUTH: %d' % rank, linestyle='-')
     plt.axvline(n_components_pca, color='b',
                 label='PCA CV: %d' % n_components_pca, linestyle='--')
     plt.axvline(n_components_fa, color='r',
                 label='FactorAnalysis CV: %d' % n_components_fa,
                 linestyle='--')
-    plt.axvline(n_components_rp, color='c',
-                label='Random Projection CV: %d' % n_components_rp,
-                linestyle='--')
-    plt.axvline(n_components_ica, color='g',
-                label='ICA CV: %d' % n_components_ica,
-                linestyle='--')
+    # plt.axvline(n_components_rp, color='c',
+    #             label='Random Projection CV: %d' % n_components_rp,
+    #             linestyle='--')
+    # plt.axvline(n_components_ica, color='g',
+    #             label='ICA CV: %d' % n_components_ica,
+    #             linestyle='--')
     plt.axvline(n_components_pca_mle, color='k',
                 label='PCA MLE: %d' % n_components_pca_mle, linestyle='--')
 
