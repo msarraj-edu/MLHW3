@@ -196,7 +196,16 @@ if  __name__ == "__main__":
 
 
     n_components = np.arange(1, n_features+1, 1)  # options for n_components
-    
+    # n_components = np.arange(1,4)
+
+
+    def save_data(estimator,X,file):
+        estimator.fit(X)
+        transformed_data = estimator.transform(X)
+
+        headers = ['feature_' + str(i) for i in range(transformed_data.shape[1])]
+        np.savetxt(file,transformed_data,header=','.join(headers),delimiter=',')
+
 
 
     def compute_scores(X):
@@ -217,16 +226,22 @@ if  __name__ == "__main__":
 
             pca_scores.append(np.mean(cross_val_score(pca, X)))
             fa_scores.append(np.mean(cross_val_score(fa, X)))
+            save_data(fa, X, current_dataset + '_FA_' + str(n) + '.csv')
             rp.fit(X)
             rp_data = rp.transform(X)
+            save_data(rp,X,current_dataset+'_RP_'+ str(n) + '.csv')
             save_to_csv('RP.csv',get_kurtosis(rp_data),'rp for '+current_dataset+', k= %d'%n,append=True)
             if n == n_components[-1]:
                 ica.fit(X)
                 ica_data = ica.transform(X)
                 save_to_csv('ICA.csv',get_kurtosis(ica_data),'rp for '+current_dataset+', k= %d'%n)
 
-            # rp_scores.append(np.mean(cross_val_score(rp,X, scoring=best_scorer)))
-            # ica_scores.append(np.mean(cross_val_score(ica,X,scoring=best_scorer)))
+
+
+        pca = PCA(svd_solver= 'full',n_components=n_components.max())
+        save_data(pca,X,current_dataset+'_PCA.csv')
+        ica = FastICA(n_components=n_components.max())
+        save_data(ica,X,current_dataset+'_ICA.csv')
 
 
         save_to_csv('PCA.csv',pca_scores,'pca for ' + current_dataset)
