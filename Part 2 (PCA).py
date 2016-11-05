@@ -196,7 +196,7 @@ if  __name__ == "__main__":
 
 
     n_components = np.arange(1, n_features+1, 1)  # options for n_components
-    # n_components = np.arange(1,4)
+    n_components = np.arange(1,4)
 
 
     def save_data(estimator,X,file):
@@ -214,29 +214,42 @@ if  __name__ == "__main__":
         rp = GaussianRandomProjection()
         ica = FastICA()
 
+        timings = np.zeros((n_components.size,5))
+
         pca_scores, fa_scores, rp_scores, ica_scores = [], [], [], []
-        for n in n_components:
+        for idx,n in enumerate(n_components):
             print n,"components"
             pca.n_components = n
             fa.n_components = n
             rp.n_components = n
             ica.n_components = n
+            timings[idx,0] = n
 
 
-
+            start = time.time()
             pca_scores.append(np.mean(cross_val_score(pca, X)))
+            timings[idx,1]=time.time()-start
+
+            start = time.time()
             fa_scores.append(np.mean(cross_val_score(fa, X)))
+            timings[idx, 2] = time.time() - start
             save_data(fa, X, current_dataset + '_FA_' + str(n) + '.csv')
+
+            start = time.time()
             rp.fit(X)
+            timings[idx, 3] = time.time() - start
             rp_data = rp.transform(X)
             save_data(rp,X,current_dataset+'_RP_'+ str(n) + '.csv')
             save_to_csv('RP.csv',get_kurtosis(rp_data),'rp for '+current_dataset+', k= %d'%n,append=True)
             if n == n_components[-1]:
+                start = time.time()
                 ica.fit(X)
+                timings[idx, 4] = time.time() - start
+
                 ica_data = ica.transform(X)
                 save_to_csv('ICA.csv',get_kurtosis(ica_data),'rp for '+current_dataset+', k= %d'%n)
 
-
+        np.savetxt('timings.csv',timings,delimiter=',',header='components,pca,fa,rp,ica')
 
         pca = PCA(svd_solver= 'full',n_components=n_components.max())
         save_data(pca,X,current_dataset+'_PCA.csv')
