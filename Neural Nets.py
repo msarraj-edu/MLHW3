@@ -147,7 +147,7 @@ def prepare_model(data,percentage,randomize=False):
 # Read Cancer or Character Data
 
 if dataSet == "Cancer":
-    data = readCancerData("wdbc.csv")
+    data = readCancerData("cancer_PCA.csv")
     target_names = ["Class 1","Class 2"]
     maximumIterations = 1500
     bin_count = 2
@@ -206,6 +206,7 @@ if tuneParamaters:
     cv = ShuffleSplit(features_train.shape[0], n_iter=3, test_size=0.2, random_state=0)
     layers = []
     for i in range(1,neuralNetSize):
+    # for i in range(8,9):
         layers.append((i,bin_count))
 
     #classifierParams = dict(gamma=gammas,C=[100000,100,1000,10000,10],kernel=['rbf','linear','poly','sigmoid'])

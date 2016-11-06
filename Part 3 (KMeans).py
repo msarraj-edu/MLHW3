@@ -14,13 +14,13 @@ if  __name__ == "__main__":
 
     ############# Initializing Params ######################
     learning_algorithm = 'K Clustering'
-
+    reduction_algorithm = 'PCA'
 
 
     current_dataset = 'letter'
     is_cross = True
 
-    path_dict = {'letter': './letter-recognition.csv',
+    path_dict = {'letter': './'+current_dataset+'_'+ reduction_algorithm +'.csv',
                  'ozone': '../data/ozone/onehr.csv',
                  "cancer":'./wdbc.csv'}
 
@@ -48,7 +48,7 @@ if  __name__ == "__main__":
     else:
         cross_str = ''
 
-    save_file_name = cross_str + {'letter': learning_algorithm + '_letter',
+    save_file_name = 'Part3 '+ cross_str + {'letter': learning_algorithm + '_letter',
                                   'ozone': learning_algorithm + '_ozone',
                                   'cancer':learning_algorithm + '_cancer'}[current_dataset] +'.csv'
 
@@ -80,20 +80,12 @@ if  __name__ == "__main__":
 
     train = pd.read_csv(file_path, names=header_dict[current_dataset])
     print train.head()
-    train.drop(drop_columns, axis=1, inplace=True)
+    # train.drop(drop_columns, axis=1, inplace=True)
     train.replace(to_replace='?', value=np.NaN, inplace=True)
     train = train.dropna(thresh=train.shape[1])
-    X = train.drop([output_flag], axis=1)
-    y = train[output_flag].values
+    X = train
 
     X = preprocessing.normalize(X, axis=0)
-
-
-
-
-    le = preprocessing.LabelEncoder()
-    le.fit(y)
-    y = le.transform(y)
 
 
 
@@ -102,7 +94,7 @@ if  __name__ == "__main__":
     start = time.time()
 
     parameters = {'init': ['k-means++','random'],
-                  'n_clusters': range(2,len(le.classes_)+1 + 5),
+                  'n_clusters': range(2,len(class_dict[current_dataset])+1 + 5),
                   'n_init': [10]}
 
 

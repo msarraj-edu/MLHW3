@@ -33,12 +33,12 @@ if  __name__ == "__main__":
 
     print 'Starting ' + learning_algorithm
 
-    current_dataset = 'letter'
+    current_dataset = 'cancer'
     is_cross = True
 
     path_dict = {'letter': './letter-recognition.csv',
                  'ozone': '../data/ozone/onehr.csv',
-                 "cancer":'./Cancer.csv'}
+                 "cancer":'./wdbc.csv'}
 
     class_dict = {
         'letter': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
@@ -47,8 +47,8 @@ if  __name__ == "__main__":
         'ozone': [0, 1],
         'cancer':[0,1]}
 
-    output_dict = {'letter': '\tlettr\tcapital', 'ozone': 'Output','cancer':"Output"}
-    drop_dict = {'letter': [], 'ozone': ['Date'],'cancer':[]}
+    output_dict = {'letter': '1', 'ozone': 'Output','cancer':"2"}
+    drop_dict = {'letter': [], 'ozone': ['Date'],'cancer':['1']}
 
 
 
@@ -68,8 +68,6 @@ if  __name__ == "__main__":
                                   'ozone': learning_algorithm + '_ozone',
                                   'cancer':learning_algorithm + '_cancer'}[current_dataset] +'.csv'
 
-    with open('RP.csv', 'wb') as fp:
-        a = csv.writer(fp, delimiter=',')
 
     with open(save_file_name, 'wb') as fp:
         a = csv.writer(fp, delimiter=',')
@@ -88,7 +86,11 @@ if  __name__ == "__main__":
                     "BIC"])
 
 
-    train = pd.read_csv(file_path)
+    header_dict = {'letter': map(str,range(1,18)),
+                   'cancer': map(str,range(1,33))}
+
+
+    train = pd.read_csv(file_path,names=header_dict[current_dataset])
     print train.head()
     train.drop(drop_columns, axis=1, inplace=True)
     train.replace(to_replace='?', value=np.NaN, inplace=True)
@@ -101,7 +103,24 @@ if  __name__ == "__main__":
     # print("Number of NA values : {0}".format((X.shape[0] * X.shape[1]) - X.count().sum()))
     # X = X.fillna(-1)
 
+    with open(current_dataset+' RP.csv', 'wb') as fp:
+        a = csv.writer(fp, delimiter=',')
 
+    with open(save_file_name, 'wb') as fp:
+        a = csv.writer(fp, delimiter=',')
+
+        a.writerow(["Dataset",
+                    "Algorithm",
+                    "Training Time",
+
+                    "homo",
+                    "compl",
+                    "v-meas",
+                    "ARI",
+                    "AMI",
+                    "silhouette",
+                    "AIC",
+                    "BIC"])
 
 
     le = preprocessing.LabelEncoder()
@@ -196,7 +215,7 @@ if  __name__ == "__main__":
 
 
     n_components = np.arange(1, n_features+1, 1)  # options for n_components
-    n_components = np.arange(1,4)
+    # n_components = np.arange(1,4)
 
 
     def save_data(estimator,X,file):
@@ -204,7 +223,8 @@ if  __name__ == "__main__":
         transformed_data = estimator.transform(X)
 
         headers = ['feature_' + str(i) for i in range(transformed_data.shape[1])]
-        np.savetxt(file,transformed_data,header=','.join(headers),delimiter=',')
+        # np.savetxt(file,transformed_data,header=','.join(headers),delimiter=',')
+        np.savetxt(file, transformed_data, delimiter=',')
 
 
 
@@ -240,16 +260,16 @@ if  __name__ == "__main__":
             timings[idx, 3] = time.time() - start
             rp_data = rp.transform(X)
             save_data(rp,X,current_dataset+'_RP_'+ str(n) + '.csv')
-            save_to_csv('RP.csv',get_kurtosis(rp_data),'rp for '+current_dataset+', k= %d'%n,append=True)
+            save_to_csv(current_dataset + ' RP.csv',get_kurtosis(rp_data),'rp for '+current_dataset+', k= %d'%n,append=True)
             if n == n_components[-1]:
                 start = time.time()
                 ica.fit(X)
                 timings[idx, 4] = time.time() - start
 
                 ica_data = ica.transform(X)
-                save_to_csv('ICA.csv',get_kurtosis(ica_data),'rp for '+current_dataset+', k= %d'%n)
+                save_to_csv(current_dataset+' ICA.csv',get_kurtosis(ica_data),'rp for '+current_dataset+', k= %d'%n)
 
-        np.savetxt('timings.csv',timings,delimiter=',',header='components,pca,fa,rp,ica')
+        np.savetxt(current_dataset +' timings.csv',timings,delimiter=',',header='components,pca,fa,rp,ica')
 
         pca = PCA(svd_solver= 'full',n_components=n_components.max())
         save_data(pca,X,current_dataset+'_PCA.csv')
@@ -257,8 +277,8 @@ if  __name__ == "__main__":
         save_data(ica,X,current_dataset+'_ICA.csv')
 
 
-        save_to_csv('PCA.csv',pca_scores,'pca for ' + current_dataset)
-        save_to_csv('FA.csv', fa_scores, 'fa for ' + current_dataset)
+        save_to_csv(current_dataset + ' PCA.csv',pca_scores,'pca for ' + current_dataset)
+        save_to_csv(current_dataset + ' FA.csv', fa_scores, 'fa for ' + current_dataset)
 
         return pca_scores, fa_scores
 

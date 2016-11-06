@@ -33,12 +33,12 @@ if  __name__ == "__main__":
 
     print 'Starting ' + learning_algorithm
 
-    current_dataset = 'letter'
+    current_dataset = 'cancer'
     is_cross = True
 
     path_dict = {'letter': './letter-recognition.csv',
                  'ozone': '../data/ozone/onehr.csv',
-                 "cancer":'./Cancer.csv'}
+                 "cancer":'./wdbc.csv'}
 
     class_dict = {
         'letter': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
@@ -47,8 +47,8 @@ if  __name__ == "__main__":
         'ozone': [0, 1],
         'cancer':[0,1]}
 
-    output_dict = {'letter': '\tlettr\tcapital', 'ozone': 'Output','cancer':"Output"}
-    drop_dict = {'letter': [], 'ozone': ['Date'],'cancer':[]}
+    output_dict = {'letter': '1', 'ozone': 'Output','cancer':"2"}
+    drop_dict = {'letter': [], 'ozone': ['Date'],'cancer':['1']}
 
 
 
@@ -86,7 +86,11 @@ if  __name__ == "__main__":
                     "BIC"])
 
 
-    train = pd.read_csv(file_path)
+    header_dict = {'letter': map(str,range(1,18)),
+                   'cancer': map(str,range(1,33))}
+
+
+    train = pd.read_csv(file_path,names=header_dict[current_dataset])
     print train.head()
     train.drop(drop_columns, axis=1, inplace=True)
     train.replace(to_replace='?', value=np.NaN, inplace=True)
